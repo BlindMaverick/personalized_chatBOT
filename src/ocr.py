@@ -69,3 +69,23 @@ def extract_text_from_images(page: PageObject) -> str:
             logger.error(f"Error processing image for OCR: {e}")
     return text
 
+def extract_text_from_excel(file_path: str) -> str:
+    """
+    Extracts text from an Excel file.
+
+    Args:
+        file_path (str): Path to the Excel file.
+
+    Returns:
+        str: Extracted and cleaned text from the Excel file.
+    """
+    text = ""
+    for sheet in load_workbook(file_path).sheetnames:
+        ws = load_workbook(file_path)[sheet]
+        for row in ws.iter_rows(values_only=True):
+            for cell in row:
+                if cell is not None:
+                    text += str(cell) + " "
+    cleaned_text = clean_text(text)
+    logger.info(f"Extracted text from XLSX file: {file_path}")
+    return cleaned_text

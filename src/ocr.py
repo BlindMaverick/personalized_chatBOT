@@ -5,6 +5,7 @@ from typing import Optional
 import pytesseract
 from PIL import Image
 from PyPDF2 import PageObject, PdfReader
+from openpyxl import load_workbook
 
 from src.constants import LOG_FILE_PATH
 from src.utils import clean_text, setup_logging
@@ -67,3 +68,26 @@ def extract_text_from_images(page: PageObject) -> str:
         except Exception as e:
             logger.error(f"Error processing image for OCR: {e}")
     return text
+
+
+def extract_text_from_xxls(file_path: str) -> Optional[str]:
+    """
+    Placeholder function for extracting text from XLSX files. 
+    This can be implemented using libraries like openpyxl or pandas.
+
+    Args:
+        file_path (str): Path to the XLSX file.
+
+    Returns:
+        Optional[str]: Extracted text from the XLSX file, or None if not implemented.
+    """
+    text = ""
+    for sheet in load_workbook(file_path).sheetnames:
+        ws = load_workbook(file_path)[sheet]
+        for row in ws.iter_rows(values_only=True):
+            for cell in row:
+                if cell is not None:
+                    text += str(cell) + " "
+    cleaned_text = clean_text(text)
+    logger.info(f"Extracted text from XLSX file: {file_path}")
+    return cleaned_text

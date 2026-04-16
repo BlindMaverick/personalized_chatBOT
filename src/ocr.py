@@ -6,6 +6,7 @@ import pytesseract
 from PIL import Image
 from PyPDF2 import PageObject, PdfReader
 from openpyxl import load_workbook
+from pptx import Presentation
 
 from src.constants import LOG_FILE_PATH
 from src.utils import clean_text, setup_logging
@@ -88,4 +89,24 @@ def extract_text_from_excel(file_path: str) -> str:
                     text += str(cell) + " "
     cleaned_text = clean_text(text)
     logger.info(f"Extracted text from XLSX file: {file_path}")
+    return cleaned_text
+
+def extract_text_from_ppts(file_path: str) -> str:
+    """
+    Extracts text from a PowerPoint file.
+
+    Args:
+        file_path (str): Path to the PowerPoint file.
+
+    Returns:
+        str: Extracted and cleaned text from the PowerPoint file.
+    """
+    text = ""
+    presentation = Presentation(file_path)
+    for slide in presentation.slides:
+        for shape in slide.shapes:
+            if hasattr(shape, "text"):
+                text += shape.text + " "
+    cleaned_text = clean_text(text)
+    logger.info(f"Extracted text from PPTX file: {file_path}")
     return cleaned_text

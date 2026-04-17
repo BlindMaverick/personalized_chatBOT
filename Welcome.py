@@ -1,5 +1,4 @@
 import logging
-import os
 
 import streamlit as st
 
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 # Set page config with title, icon, and layout
 st.set_page_config(
-    page_title="Jam with AI - Your Conversational Platform", page_icon="🤖"
+    page_title="JARVIS 1.0", page_icon="🤖"
 )
 
 
@@ -21,55 +20,109 @@ def apply_custom_css() -> None:
     st.markdown(
         """
         <style>
-        /* Main background and text colors */
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap');
+        :root {
+            --bg-1: #07111f;
+            --bg-2: #0d1b2f;
+            --panel: rgba(10, 20, 38, 0.72);
+            --panel-border: rgba(115, 203, 255, 0.22);
+            --text: #e7f6ff;
+            --muted: #9eb6ca;
+            --accent: #58d6ff;
+            --accent-2: #7cffcb;
+            --glow: 0 20px 60px rgba(11, 190, 255, 0.18);
+        }
+        html, body, [class*="css"]  {
+            font-family: "Space Grotesk", sans-serif;
+        }
         body {
-            background-color: #f0f8ff;  /* Light cyan background */
-            color: #002B5B;  /* Dark blue text for readability */
+            background:
+                radial-gradient(circle at top left, rgba(88, 214, 255, 0.18), transparent 30%),
+                radial-gradient(circle at top right, rgba(124, 255, 203, 0.14), transparent 24%),
+                linear-gradient(135deg, var(--bg-1), var(--bg-2) 55%, #050b16 100%);
+            color: var(--text);
         }
-        .sidebar .sidebar-content {
-            background-color: #006d77;  /* Dark cyan sidebar background */
-            color: white;
-            padding: 20px;
-            border-right: 2px solid #003d5c;  /* Darker border */
+        .stApp {
+            background:
+                radial-gradient(circle at 15% 20%, rgba(88, 214, 255, 0.12), transparent 0, transparent 26%),
+                radial-gradient(circle at 85% 10%, rgba(124, 255, 203, 0.10), transparent 0, transparent 24%),
+                linear-gradient(135deg, #07111f, #0d1b2f 55%, #050b16 100%);
         }
-        .sidebar h2, .sidebar h4 {
-            color: white;  /* White text for sidebar headings */
+        [data-testid="stAppViewContainer"] * {
+            color: var(--text);
+        }
+        [data-testid="stMainBlockContainer"] {
+            max-width: 1080px;
+            padding-top: 2.25rem;
+            padding-bottom: 2.5rem;
         }
         .block-container {
-            background-color: white;  /* White content background */
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);  /* Subtle shadow for modern look */
+            background: linear-gradient(180deg, rgba(8, 19, 36, 0.84), rgba(8, 17, 30, 0.7));
+            border: 1px solid var(--panel-border);
+            border-radius: 28px;
+            padding: 28px 32px 34px;
+            box-shadow: var(--glow);
+            backdrop-filter: blur(18px);
         }
-        /* Center content inside columns */
-        .stColumn {
-            text-align: center;
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, rgba(5, 14, 28, 0.96), rgba(7, 19, 36, 0.96));
+            border-right: 1px solid rgba(88, 214, 255, 0.14);
         }
-        /* Style for the centered and bold footer text */
-        .footer-text {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: black;
-            text-align: center;
-            margin-top: 10px;
+        [data-testid="stSidebar"] * {
+            color: var(--text) !important;
         }
-        /* Style buttons to look modern and attractive */
-        .stButton button {
-            background-color: #118ab2;
-            color: white;
-            border-radius: 5px;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        .stButton button:hover {
-            background-color: #07a6c2;
-            color: white;
-        }
-        /* Headings inside the main page */
         h1, h2, h3, h4 {
-            color: #006d77;
+            color: #f4fbff !important;
+            letter-spacing: -0.03em;
+        }
+        h1 {
+            font-size: 3.1rem !important;
+            line-height: 1.02;
+            margin-bottom: 0.65rem;
+        }
+        p, li, label, div {
+            color: var(--text) !important;
+        }
+        strong {
+            color: var(--accent-2) !important;
+        }
+        .footer-text {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--muted) !important;
+            text-align: center;
+            margin-top: 16px;
+            font-family: "JetBrains Mono", monospace;
+        }
+        .stButton button,
+        button[kind="secondary"],
+        [data-testid="stBaseButton-secondary"] {
+            background: linear-gradient(135deg, #59d3ff, #6dffcf) !important;
+            color: #04111f !important;
+            border: none !important;
+            border-radius: 999px !important;
+            padding: 0.72rem 1.25rem !important;
+            font-size: 0.96rem !important;
+            font-weight: 700 !important;
+            box-shadow: 0 14px 32px rgba(88, 214, 255, 0.24) !important;
+            transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+        }
+        .stButton button:hover,
+        button[kind="secondary"]:hover,
+        [data-testid="stBaseButton-secondary"]:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 36px rgba(88, 214, 255, 0.28) !important;
+        }
+        input, textarea, select {
+            color: #f4fbff !important;
+            -webkit-text-fill-color: #f4fbff !important;
+            background: rgba(7, 17, 31, 0.85) !important;
+            caret-color: #7cffcb !important;
+            border-radius: 16px !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: var(--muted) !important;
+            -webkit-text-fill-color: var(--muted) !important;
         }
         </style>
         """,
@@ -78,38 +131,64 @@ def apply_custom_css() -> None:
     logger.info("Applied custom CSS styling.")
 
 
-# Function to display logo or placeholder
-def display_logo(logo_path: str) -> None:
-    """Displays the logo in the sidebar or a placeholder if the logo is not found.
-
-    Args:
-        logo_path (str): The file path for the logo image.
-    """
-    if os.path.exists(logo_path):
-        st.sidebar.image(logo_path, width=220)
-        logger.info("Logo displayed.")
-    else:
-        st.sidebar.markdown("### Logo Placeholder")
-        logger.warning("Logo not found, displaying placeholder.")
-
-
 # Function to display main content
 def display_main_content() -> None:
     """Displays the main welcome content on the page."""
-    st.title("Personal Document Assistant 📄🤖")
     st.markdown(
         """
-        Welcome to the AI-Powered Document Retrieval Assistant 👋
-                
-        This app allows you to interact with an AI-powered assistant and upload documents for processing and retrieval.
-        
-        **Features:**
-        - **Chatbot**: Have a conversation with the AI using the latest LLM model.
-        - **Document Upload**: Upload PDFs and retrieve data from them using OpenSearch as a Hybrid RAG System.
-        
-        **Choose a page from the sidebar to begin!**
+        <div style="display:inline-block;padding:0.35rem 0.8rem;border:1px solid rgba(88,214,255,0.28);border-radius:999px;background:rgba(88,214,255,0.08);font-family:'JetBrains Mono',monospace;font-size:0.82rem;letter-spacing:0.08em;text-transform:uppercase;">
+        JARVIS 1.0
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.title("JARVIS 1.0")
+    st.markdown(
+        """
+        A local AI command console for retrieval, document indexing, and grounded conversation.
+
+        **What you can do here**
+        - **Chat with context** using your local LLM setup and retrieved document chunks.
+        - **Upload and index documents** into OpenSearch for fast semantic + keyword retrieval.
+        - **Stay private** by keeping your workflow on your own machine.
+
+        **Choose a page from the sidebar to launch the workflow.**
         """
     )
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(
+            """
+            <div style="padding:1.1rem;border:1px solid rgba(88,214,255,0.18);border-radius:22px;background:rgba(8,19,36,0.72);">
+            <div style="font-family:'JetBrains Mono',monospace;color:#7cffcb;font-size:0.8rem;">MODULE_01</div>
+            <div style="font-size:1.15rem;font-weight:700;margin-top:0.4rem;">Hybrid Search</div>
+            <div style="color:#9eb6ca;margin-top:0.35rem;">Blend vector retrieval with exact text matches for grounded answers.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with col2:
+        st.markdown(
+            """
+            <div style="padding:1.1rem;border:1px solid rgba(88,214,255,0.18);border-radius:22px;background:rgba(8,19,36,0.72);">
+            <div style="font-family:'JetBrains Mono',monospace;color:#7cffcb;font-size:0.8rem;">MODULE_02</div>
+            <div style="font-size:1.15rem;font-weight:700;margin-top:0.4rem;">Local Inference</div>
+            <div style="color:#9eb6ca;margin-top:0.35rem;">Run the assistant against your own stack without shipping files away.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with col3:
+        st.markdown(
+            """
+            <div style="padding:1.1rem;border:1px solid rgba(88,214,255,0.18);border-radius:22px;background:rgba(8,19,36,0.72);">
+            <div style="font-family:'JetBrains Mono',monospace;color:#7cffcb;font-size:0.8rem;">MODULE_03</div>
+            <div style="font-size:1.15rem;font-weight:700;margin-top:0.4rem;">Document Ops</div>
+            <div style="color:#9eb6ca;margin-top:0.35rem;">Upload, review, and manage the files feeding your knowledge base.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     logger.info("Displayed main welcome content.")
 
 
@@ -117,16 +196,16 @@ def display_main_content() -> None:
 def display_sidebar_content() -> None:
     """Displays headers and footer content in the sidebar."""
     st.sidebar.markdown(
-        "<h2 style='text-align: center;'>Jam with AI</h2>", unsafe_allow_html=True
+        "<h2 style='text-align: center;'>JARVIS 1.0</h2>", unsafe_allow_html=True
     )
     st.sidebar.markdown(
-        "<h4 style='text-align: center;'>Your Conversational Platform</h4>",
+        "<h4 style='text-align: center;'>Autonomous Document Console</h4>",
         unsafe_allow_html=True,
     )
     st.sidebar.markdown(
         """
         <div class="footer-text">
-            © 2024 Jam with AI
+            SYSTEM STATUS // ONLINE
         </div>
         """,
         unsafe_allow_html=True,
@@ -137,6 +216,5 @@ def display_sidebar_content() -> None:
 # Main execution
 if __name__ == "__main__":
     apply_custom_css()
-    display_logo("images/jamwithai_logo.png")
     display_sidebar_content()
     display_main_content()

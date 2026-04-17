@@ -79,15 +79,22 @@ def prompt_template(query: str, context: str, history: List[Dict[str, str]]) -> 
     Returns:
         str: Constructed prompt for Ollama model.
     """
-    prompt = "You are a knowledgeable chatbot assistant. "
+    prompt = (
+        "You are a knowledgeable chatbot assistant for uploaded documents. "
+        "When context is provided, answer from that context first and mention the source file name(s). "
+        "If the answer is not present in the uploaded document context, say that clearly instead of making it up. "
+    )
     if context:
         prompt += (
-            "Use the following context to answer the question.\nContext:\n"
+            "Use the following retrieved document context to answer the question.\nContext:\n"
             + context
             + "\n"
         )
     else:
-        prompt += "Answer questions to the best of your knowledge.\n"
+        prompt += (
+            "No relevant uploaded document context was found. "
+            "Tell the user you could not find the answer in the uploaded files.\n"
+        )
 
     if history:
         prompt += "Conversation History:\n"
@@ -143,7 +150,12 @@ def generate_response_streaming(
 
         # Collect text from search results
         for i, result in enumerate(search_results):
-            context += f"Document {i}:\n{result['_source']['text']}\n\n"
+            source = result["_source"].get("document_name", "Unknown file")
+            context += (
+                f"Document {i + 1}:\n"
+                f"Source file: {source}\n"
+                f"Content:\n{result['_source']['text']}\n\n"
+            )
 
     # Generate prompt using the prompt_template function
     prompt = prompt_template(query, context, history)

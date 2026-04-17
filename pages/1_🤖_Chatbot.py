@@ -1,5 +1,4 @@
 import logging
-import os
 
 import streamlit as st
 
@@ -17,23 +16,95 @@ setup_logging()  # Configures logging for the application
 logger = logging.getLogger(__name__)
 
 # Set page configuration
-st.set_page_config(page_title="Jam with AI - Chatbot", page_icon="🤖")
+st.set_page_config(page_title="JARVIS 1.0 - Chat", page_icon="🤖")
 
 # Apply custom CSS
 st.markdown(
     """
     <style>
-    /* Main background and text colors */
-    body { background-color: #f0f8ff; color: #002B5B; }
-    .sidebar .sidebar-content { background-color: #006d77; color: white; padding: 20px; border-right: 2px solid #003d5c; }
-    .sidebar h2, .sidebar h4 { color: white; }
-    .block-container { background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); }
-    .footer-text { font-size: 1.1rem; font-weight: bold; color: black; text-align: center; margin-top: 10px; }
-    .stButton button { background-color: #118ab2; color: white; border-radius: 5px; padding: 10px 20px; font-size: 16px; }
-    .stButton button:hover { background-color: #07a6c2; color: white; }
-    h1, h2, h3, h4 { color: #006d77; }
-    .stChatMessage { background-color: #e0f7fa; color: #006d77; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
-    .stChatMessage.user { background-color: #118ab2; color: white; }
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap');
+    :root {
+        --bg-1: #07111f;
+        --bg-2: #0d1b2f;
+        --panel: rgba(8, 19, 36, 0.78);
+        --panel-border: rgba(115, 203, 255, 0.22);
+        --text: #e7f6ff;
+        --muted: #9eb6ca;
+        --accent: #58d6ff;
+        --accent-2: #7cffcb;
+    }
+    html, body, [class*="css"] { font-family: "Space Grotesk", sans-serif; }
+    body { background: linear-gradient(135deg, #07111f, #0d1b2f 55%, #050b16 100%); color: var(--text); }
+    .stApp {
+        background:
+            radial-gradient(circle at 15% 15%, rgba(88, 214, 255, 0.12), transparent 24%),
+            radial-gradient(circle at 85% 10%, rgba(124, 255, 203, 0.10), transparent 24%),
+            linear-gradient(135deg, #07111f, #0d1b2f 55%, #050b16 100%);
+    }
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, rgba(5, 14, 28, 0.96), rgba(7, 19, 36, 0.96));
+        border-right: 1px solid rgba(88, 214, 255, 0.14);
+    }
+    [data-testid="stSidebar"] * { color: var(--text) !important; }
+    .block-container {
+        background: linear-gradient(180deg, rgba(8, 19, 36, 0.84), rgba(8, 17, 30, 0.7));
+        border: 1px solid var(--panel-border);
+        border-radius: 28px;
+        padding: 28px 32px 110px;
+        box-shadow: 0 20px 60px rgba(11, 190, 255, 0.18);
+        backdrop-filter: blur(18px);
+    }
+    .footer-text { font-size: 0.95rem; font-weight: 600; color: var(--muted); text-align: center; margin-top: 16px; font-family: "JetBrains Mono", monospace; }
+    .stButton button {
+        background: linear-gradient(135deg, #59d3ff, #6dffcf) !important;
+        color: #04111f !important;
+        border-radius: 999px !important;
+        border: none !important;
+        padding: 0.72rem 1.25rem !important;
+        font-size: 0.96rem !important;
+        font-weight: 700 !important;
+        box-shadow: 0 14px 32px rgba(88, 214, 255, 0.24) !important;
+    }
+    h1, h2, h3, h4 { color: #f4fbff !important; letter-spacing: -0.03em; }
+    p, label, div, span { color: var(--text) !important; }
+    .stChatMessage {
+        background: linear-gradient(180deg, rgba(11, 32, 59, 0.92), rgba(9, 24, 42, 0.92));
+        color: #f4fbff;
+        padding: 14px 16px;
+        border-radius: 20px;
+        margin-bottom: 14px;
+        border: 1px solid rgba(88, 214, 255, 0.14);
+    }
+    .stChatMessage.user {
+        background: linear-gradient(135deg, rgba(88, 214, 255, 0.18), rgba(124, 255, 203, 0.18));
+        border: 1px solid rgba(124, 255, 203, 0.24);
+    }
+    [data-testid="stChatMessage"] * { color: #f4fbff !important; }
+    [data-testid="stChatInput"] {
+        background: rgba(7, 17, 31, 0.92) !important;
+        border-radius: 22px;
+        border: 1px solid rgba(88, 214, 255, 0.18);
+        box-shadow: 0 12px 32px rgba(3, 10, 18, 0.35);
+    }
+    [data-testid="stChatInput"] > div {
+        background: transparent !important;
+    }
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stChatInput"] textarea::placeholder,
+    [data-testid="stChatInput"] input,
+    [data-testid="stChatInput"] input::placeholder {
+        color: #f4fbff !important;
+        -webkit-text-fill-color: #f4fbff !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        background: transparent !important;
+        caret-color: #7cffcb !important;
+        font-weight: 500;
+    }
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: var(--muted) !important;
+        -webkit-text-fill-color: var(--muted) !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -44,7 +115,7 @@ logger.info("Custom CSS applied.")
 # Main chatbot page rendering function
 def render_chatbot_page() -> None:
     # Set up a placeholder at the very top of the main content area
-    st.title("Jam with AI - Chatbot 🤖")
+    st.title("JARVIS 1.0 // Chat")
     model_loading_placeholder = st.empty()
 
     # Initialize session state variables for chatbot settings
@@ -61,7 +132,15 @@ def render_chatbot_page() -> None:
     index_name = OPENSEARCH_INDEX
 
     # Ensure the index exists
-    create_index(client)
+    try:
+        create_index(client)
+    except ValueError as exc:
+        st.error(str(exc))
+        st.info(
+            "Current config: model 'sentence-transformers/all-mpnet-base-v2' "
+            "expects 768 dimensions."
+        )
+        st.stop()
 
     # Sidebar settings for hybrid search toggle, result count, and temperature
     st.session_state["use_hybrid_search"] = st.sidebar.checkbox(
@@ -82,21 +161,12 @@ def render_chatbot_page() -> None:
         step=0.1,
     )
 
-    # Display logo or placeholder
-    logo_path = "images/jamwithai_logo.png"
-    if os.path.exists(logo_path):
-        st.sidebar.image(logo_path, width=220)
-        logger.info("Logo displayed.")
-    else:
-        st.sidebar.markdown("### Logo Placeholder")
-        logger.warning("Logo not found, displaying placeholder.")
-
     # Sidebar headers and footer
     st.sidebar.markdown(
-        "<h2 style='text-align: center;'>Jam with AI</h2>", unsafe_allow_html=True
+        "<h2 style='text-align: center;'>JARVIS 1.0</h2>", unsafe_allow_html=True
     )
     st.sidebar.markdown(
-        "<h4 style='text-align: center;'>Your Conversational Platform</h4>",
+        "<h4 style='text-align: center;'>Conversational Command Mode</h4>",
         unsafe_allow_html=True,
     )
 
@@ -104,7 +174,7 @@ def render_chatbot_page() -> None:
     st.sidebar.markdown(
         """
         <div class="footer-text">
-            © 2025 Jam with AI
+            SYSTEM STATUS // ONLINE
         </div>
         """,
         unsafe_allow_html=True,

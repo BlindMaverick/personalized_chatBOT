@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, cast
 
 from opensearchpy import OpenSearch, helpers
 
@@ -41,6 +41,26 @@ def create_index(client: OpenSearch) -> None:
         response = client.indices.create(index=OPENSEARCH_INDEX, body=index_body)
         logger.info(f"Created index {OPENSEARCH_INDEX}: {response}")
     else:
+        mapping = cast(
+            Dict[str, Any],
+            client.indices.get_mapping(index=OPENSEARCH_INDEX),
+        )
+        existing_dimension = (
+            mapping.get(OPENSEARCH_INDEX, {})
+            .get("mappings", {})
+            .get("properties", {})
+            .get("embedding", {})
+            .get("dimension")
+        )
+
+        if existing_dimension != EMBEDDING_DIMENSION:
+            raise ValueError(
+                f"OpenSearch index '{OPENSEARCH_INDEX}' uses embedding dimension "
+                f"{existing_dimension}, but the app is configured for "
+                f"{EMBEDDING_DIMENSION}. Delete and recreate the index, then re-upload "
+                "your documents."
+            )
+
         logger.info(f"Index {OPENSEARCH_INDEX} already exists.")
 
 

@@ -1,12 +1,9 @@
 import io
 import logging
-from typing import Optional
 
 import pytesseract
 from PIL import Image
 from PyPDF2 import PageObject, PdfReader
-from openpyxl import load_workbook
-from pptx import Presentation
 
 from src.constants import LOG_FILE_PATH
 from src.utils import clean_text, setup_logging
@@ -80,9 +77,17 @@ def extract_text_from_excel(file_path: str) -> str:
     Returns:
         str: Extracted and cleaned text from the Excel file.
     """
+    try:
+        from openpyxl import load_workbook
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "Excel support requires 'openpyxl'. Install it with: pip install openpyxl"
+        ) from exc
+
     text = ""
-    for sheet in load_workbook(file_path).sheetnames:
-        ws = load_workbook(file_path)[sheet]
+    workbook = load_workbook(file_path)
+    for sheet in workbook.sheetnames:
+        ws = workbook[sheet]
         for row in ws.iter_rows(values_only=True):
             for cell in row:
                 if cell is not None:
@@ -101,6 +106,13 @@ def extract_text_from_ppts(file_path: str) -> str:
     Returns:
         str: Extracted and cleaned text from the PowerPoint file.
     """
+    try:
+        from pptx import Presentation
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "PowerPoint support requires 'python-pptx'. Install it with: pip install python-pptx"
+        ) from exc
+
     text = ""
     presentation = Presentation(file_path)
     for slide in presentation.slides:

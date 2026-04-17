@@ -3,7 +3,6 @@ import os
 import time
 
 import streamlit as st
-from PyPDF2 import PdfReader
 
 from src.constants import OPENSEARCH_INDEX, TEXT_CHUNK_SIZE
 from src.embeddings import generate_embeddings, get_embedding_model
@@ -13,49 +12,117 @@ from src.ingestion import (
     delete_documents_by_document_name,
 )
 from src.opensearch import get_opensearch_client
+from src.ocr import extract_text_from_excel, extract_text_from_pdf, extract_text_from_ppts
 from src.utils import chunk_text, setup_logging
 
 # Initialize logger
 setup_logging()  # Set up centralized logging configuration
 logger = logging.getLogger(__name__)
 
+SUPPORTED_EXTENSIONS = {
+    ".pdf": extract_text_from_pdf,
+    ".pptx": extract_text_from_ppts,
+    ".xlsx": extract_text_from_excel,
+}
+
 # Set page config with title, icon, and layout
-st.set_page_config(page_title="Jam with AI - Upload Documents", page_icon="📂")
+st.set_page_config(page_title="JARVIS 1.0 - Upload", page_icon="📂")
 
 # Custom CSS to style the page and sidebar
 st.markdown(
     """
     <style>
-    /* Main background and text colors */
-    body { background-color: #f0f8ff; color: #002B5B; }
-    .sidebar .sidebar-content { background-color: #006d77; color: white; padding: 20px; border-right: 2px solid #003d5c; }
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap');
+    :root {
+        --bg-1: #07111f;
+        --bg-2: #0d1b2f;
+        --panel: rgba(8, 19, 36, 0.78);
+        --panel-border: rgba(115, 203, 255, 0.22);
+        --text: #e7f6ff;
+        --muted: #9eb6ca;
+        --accent: #58d6ff;
+        --accent-2: #7cffcb;
+    }
+    html, body, [class*="css"] { font-family: "Space Grotesk", sans-serif; }
+    body { background: linear-gradient(135deg, #07111f, #0d1b2f 55%, #050b16 100%); color: var(--text); }
+    .stApp {
+        background:
+            radial-gradient(circle at 10% 18%, rgba(88, 214, 255, 0.12), transparent 24%),
+            radial-gradient(circle at 88% 12%, rgba(124, 255, 203, 0.10), transparent 24%),
+            linear-gradient(135deg, #07111f, #0d1b2f 55%, #050b16 100%);
+    }
+    [data-testid="stAppViewContainer"] * { color: var(--text); }
+    [data-testid="stMainBlockContainer"] {
+        max-width: 1080px;
+        padding-top: 2.25rem;
+        padding-bottom: 2.5rem;
+    }
+    .sidebar .sidebar-content { background: linear-gradient(180deg, rgba(5, 14, 28, 0.96), rgba(7, 19, 36, 0.96)); color: white; padding: 20px; border-right: 1px solid rgba(88, 214, 255, 0.14); }
     .sidebar h2, .sidebar h4 { color: white; }
-    .block-container { background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); }
-    .footer-text { font-size: 1.1rem; font-weight: bold; color: black; text-align: center; margin-top: 10px; }
-    .stButton button { background-color: #118ab2; color: white; border-radius: 5px; padding: 10px 20px; font-size: 16px; }
-    .stButton button:hover { background-color: #07a6c2; color: white; }
-    .stButton.delete-button button { background-color: #e63946; color: white; font-size: 14px; }
-    .stButton.delete-button button:hover { background-color: #ff4c4c; }
-    h1, h2, h3, h4 { color: #006d77; }
+    .block-container { background: linear-gradient(180deg, rgba(8, 19, 36, 0.84), rgba(8, 17, 30, 0.7)); border-radius: 28px; padding: 28px 32px 34px; box-shadow: 0 20px 60px rgba(11, 190, 255, 0.18); border: 1px solid var(--panel-border); backdrop-filter: blur(18px); }
+    .footer-text { font-size: 0.95rem; font-weight: 600; color: var(--muted); text-align: center; margin-top: 16px; font-family: "JetBrains Mono", monospace; }
+    .stButton button { background: linear-gradient(135deg, #59d3ff, #6dffcf) !important; color: #04111f !important; border-radius: 999px !important; padding: 0.72rem 1.25rem !important; font-size: 0.96rem !important; font-weight: 700 !important; border: none !important; box-shadow: 0 14px 32px rgba(88, 214, 255, 0.24) !important; }
+    .stButton button:hover { filter: brightness(1.03); }
+    .stButton.delete-button button { background: linear-gradient(135deg, #ff7a7a, #ffb26d) !important; color: #1c0c0c !important; font-size: 14px; }
+    .stButton.delete-button button:hover { filter: brightness(1.03); }
+    h1, h2, h3, h4 { color: #f4fbff !important; letter-spacing: -0.03em; }
+    input, textarea, select {
+        color: #f4fbff !important;
+        -webkit-text-fill-color: #f4fbff !important;
+        background: rgba(7, 17, 31, 0.85) !important;
+        caret-color: #7cffcb !important;
+        border-radius: 16px !important;
+    }
+    input::placeholder, textarea::placeholder {
+        color: var(--muted) !important;
+        -webkit-text-fill-color: var(--muted) !important;
+    }
+    [data-testid="stFileUploader"] * {
+        color: #f4fbff !important;
+    }
+    [data-baseweb="input"] *,
+    [data-baseweb="select"] *,
+    [data-testid="stTextInput"] *,
+    [data-testid="stTextArea"] * {
+        color: #f4fbff !important;
+        -webkit-text-fill-color: #f4fbff !important;
+    }
+    [data-testid="stExpander"] *,
+    [data-testid="stMarkdownContainer"] *,
+    [data-testid="stFileUploaderDropzone"] * {
+        color: #f4fbff !important;
+    }
+    [data-testid="stFileUploaderDropzone"] {
+        background: linear-gradient(180deg, rgba(10, 28, 52, 0.92), rgba(7, 21, 40, 0.92)) !important;
+        border: 2px dashed rgba(88, 214, 255, 0.42) !important;
+        border-radius: 14px !important;
+        box-shadow: inset 0 0 0 1px rgba(124, 255, 203, 0.08);
+        padding-top: 1.4rem !important;
+        padding-bottom: 1.4rem !important;
+    }
+    [data-testid="stFileUploaderDropzone"] > div {
+        background-color: transparent !important;
+    }
+    button[kind="secondary"],
+    [data-testid="stBaseButton-secondary"] {
+        background: linear-gradient(135deg, #59d3ff, #6dffcf) !important;
+        color: #04111f !important;
+        border: none !important;
+        border-radius: 999px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 12px 28px rgba(88, 214, 255, 0.2) !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# Add a logo (replace with your own image file path or URL)
-logo_path = "images/jamwithai_logo.png"  # Replace with your logo file
-if os.path.exists(logo_path):
-    st.sidebar.image(logo_path, width=220)
-else:
-    st.sidebar.markdown("### Logo Placeholder")
-    logger.warning("Logo not found, displaying placeholder.")
-
 # Sidebar header
 st.sidebar.markdown(
-    "<h2 style='text-align: center;'>Jam with AI</h2>", unsafe_allow_html=True
+    "<h2 style='text-align: center;'>JARVIS 1.0</h2>", unsafe_allow_html=True
 )
 st.sidebar.markdown(
-    "<h4 style='text-align: center;'>Your Document Assistant</h4>",
+    "<h4 style='text-align: center;'>Document Ingestion Console</h4>",
     unsafe_allow_html=True,
 )
 
@@ -63,7 +130,7 @@ st.sidebar.markdown(
 st.sidebar.markdown(
     """
     <div class="footer-text">
-        © 2025 Jam with AI
+        SYSTEM STATUS // ONLINE
     </div>
     """,
     unsafe_allow_html=True,
@@ -76,7 +143,7 @@ def render_upload_page() -> None:
     Shows only the documents that are present in the OpenSearch index.
     """
 
-    st.title("Upload Documents")
+    st.title("JARVIS 1.0 // Upload")
     # Placeholder for the loading spinner at the top
     model_loading_placeholder = st.empty()
 
@@ -98,7 +165,15 @@ def render_upload_page() -> None:
     index_name = OPENSEARCH_INDEX
 
     # Ensure the index exists
-    create_index(client)
+    try:
+        create_index(client)
+    except ValueError as exc:
+        st.error(str(exc))
+        st.info(
+            "Current config: model 'sentence-transformers/all-mpnet-base-v2' "
+            "expects 768 dimensions."
+        )
+        st.stop()
 
     # Initialize or clear the documents list in session state
     st.session_state["documents"] = []
@@ -117,8 +192,7 @@ def render_upload_page() -> None:
     for document_name in document_names:
         file_path = os.path.join(UPLOAD_DIR, document_name)
         if os.path.exists(file_path):
-            reader = PdfReader(file_path)
-            text = "".join([page.extract_text() for page in reader.pages])
+            text = extract_text_for_file(file_path)
             st.session_state["documents"].append(
                 {"filename": document_name, "content": text, "file_path": file_path}
             )
@@ -134,10 +208,8 @@ def render_upload_page() -> None:
         )
         del st.session_state["deleted_file"]
 
-    # Allow users to upload PDF files
-    uploaded_files = st.file_uploader(
-        "Upload PDF documents", type="pdf", accept_multiple_files=True
-    )
+    # Allow users to select any file type in the picker.
+    uploaded_files = st.file_uploader("Upload documents", accept_multiple_files=True)
 
     if uploaded_files:
         with st.spinner("Uploading and processing documents. Please wait..."):
@@ -149,8 +221,13 @@ def render_upload_page() -> None:
                     continue
 
                 file_path = save_uploaded_file(uploaded_file)
-                reader = PdfReader(file_path)
-                text = "".join([page.extract_text() for page in reader.pages])
+                text = extract_text_for_file(file_path)
+                if not text.strip():
+                    st.warning(
+                        f"Skipping '{uploaded_file.name}' because its file type is not supported yet."
+                    )
+                    os.remove(file_path)
+                    continue
                 chunks = chunk_text(text, chunk_size=TEXT_CHUNK_SIZE, overlap=100)
                 embeddings = generate_embeddings(chunks)
 
@@ -228,6 +305,25 @@ def save_uploaded_file(uploaded_file) -> str:  # type: ignore
         f.write(uploaded_file.getbuffer())
     logger.info(f"File '{uploaded_file.name}' saved to '{file_path}'.")
     return file_path
+
+
+def extract_text_for_file(file_path: str) -> str:
+    """
+    Extracts text from a supported file type based on its extension.
+
+    Args:
+        file_path (str): Path to the saved file.
+
+    Returns:
+        str: Extracted text, or an empty string for unsupported file types.
+    """
+    extension = os.path.splitext(file_path)[1].lower()
+    extractor = SUPPORTED_EXTENSIONS.get(extension)
+    if not extractor:
+        logger.warning(f"Unsupported file type for extraction: {file_path}")
+        return ""
+
+    return extractor(file_path)
 
 
 if __name__ == "__main__":

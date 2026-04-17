@@ -14,6 +14,23 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
+def _get_ollama_model_names() -> List[str]:
+    """Returns the names of models currently available in Ollama."""
+    response = ollama.list()
+    models = getattr(response, "models", None)
+    if models is None and isinstance(response, dict):
+        models = response.get("models", [])
+
+    model_names: List[str] = []
+    for model in models or []:
+        model_name = getattr(model, "model", None)
+        if model_name is None and isinstance(model, dict):
+            model_name = model.get("model") or model.get("name")
+        if model_name:
+            model_names.append(model_name)
+    return model_names
+
+
 @st.cache_resource(show_spinner=False)
 def ensure_model_pulled(model: str) -> bool:
     """
@@ -26,7 +43,7 @@ def ensure_model_pulled(model: str) -> bool:
         bool: True if the model is available or successfully pulled, False if an error occurs.
     """
     try:
-        available_models = ollama.list()
+        available_models = _get_ollama_model_names()
         if model not in available_models:
             logger.info(f"Model {model} not found locally. Pulling the model...")
             ollama.pull(model)

@@ -2,6 +2,7 @@ import logging
 
 import streamlit as st
 
+from src.bootstrap import bootstrap_runtime
 from src.utils import setup_logging
 
 # Initialize logger
@@ -192,6 +193,26 @@ def display_main_content() -> None:
     logger.info("Displayed main welcome content.")
 
 
+def display_startup_status() -> None:
+    """Bootstraps local dependencies and models for the app."""
+    st.markdown("### System Bootstrap")
+    with st.spinner("Preparing Python packages and local models..."):
+        status = bootstrap_runtime()
+
+    for message in status["messages"]:
+        if isinstance(message, str):
+            if "could not complete automatically" in message:
+                st.warning(message)
+            else:
+                st.success(message)
+
+    if not status["success"]:
+        st.error(
+            "Startup preparation is incomplete. Resolve the message above, then refresh the app."
+        )
+        st.stop()
+
+
 # Function to display sidebar content
 def display_sidebar_content() -> None:
     """Displays headers and footer content in the sidebar."""
@@ -217,4 +238,5 @@ def display_sidebar_content() -> None:
 if __name__ == "__main__":
     apply_custom_css()
     display_sidebar_content()
+    display_startup_status()
     display_main_content()
